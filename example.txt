@@ -1,0 +1,9 @@
+This is an example file
+word
+word
+word
+word
+run
+tim
+cat dog
+dog cat
