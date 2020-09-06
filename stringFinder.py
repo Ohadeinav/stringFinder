@@ -61,34 +61,45 @@ class match:
         self.mapList.append(map)
         self.mutex.release() # unlock the mapList
 
+
     # the runMatch method splits the file into blocks of 1000 lines each and sends them concurrently to the matcher
     # to find occurences of the given strings. At the end, it conjoins the results of the threads and prints
     # all the occurences in the text
     def runMatch(self):
         f = open(self.inFile ,'r')
-        linOff, charOff = 0,0 # initialize lineOffset and charOffset to send to the matcher for each string
-        lines = f.readlines() # split the file into a list of lines
-        f.close()
-        linCount = len(lines)
-        threadList=[]
-        i=0
-        while i < linCount:  # generate lists of 1000 lines each and send to the matcher
-            if linCount-i < 1000: # end case of approaching the end of the text file
-                buff = lines[i:i+linCount-i]
-            else:
-                buff = lines[i:i + 1000]
-            # create a thread to send the buffer to the matcher and start locating occurences
-            currThread = Thread(target=self.__matcher(buff,linOff,charOff))
+        linOff, charOff = 0,0 #initialize lineOffset and charOffset to send to the matcher for each string
+        threadList, buff = [], []
+        i, count = 0,0
+        # count number of lines in the file for edge case of nearing eof
+        for numLines, l in enumerate(f):
+            pass
+        numLines += 1 #since enumerate starts from 0
+        f.seek(0) # reposition file pointer to beginning
+
+        # generate lists of 1000 lines each and send to the matcher
+        for line in f:
+            count += 1
+            buff.append(line)
+            if count < 1000: # buffer must be 1000 lines long before sending to thread
+                if i+count != numLines: # i.e. has not yet reached the last line
+                    continue
+            # now thst we have reached 1000 lines, create a thread to
+            # send the buffer to the matcher and start locating occurences
+            currThread = Thread(target=self.__matcher(buff, linOff, charOff))
             threadList.append(currThread)
             currThread.start()
-            # increment the linOff and charOff
-            i += 1000
+            # increment the linOff and charOff accordingly
+            i += count
             linOff = i
-            for line in buff:
-                charOff += len(line)
+            for a_line in buff:
+                charOff += len(a_line)
+            count = 0  #reset the count
+            buff = []  #reset the buffer
+
+        f.close() # close the file
         # wait for all threads to finish
-            for t in threadList:
-                t.join()
+        for t in threadList:
+            t.join()
         # aggregate the mapList and print the results
         self.__aggregAndPrint()
 
@@ -102,13 +113,15 @@ class match:
             for i in v:
                 i.print()
 
+
 if __name__ == "__main__":
+
     matcher = match("big.txt", ["James","John","Robert","Michael","William",
-                                    "David","Richard","Charles","Joseph","Thomas","Christopher","Daniel","Paul","Mark",
                                     "Donald","George","Kenneth","Steven","Edward",
                                     "Brian","Ronald","Anthony","Kevin","Jason","Matthew","Gary","Timothy","Jose",
                                     "Larry","Jeffrey","Frank","Scott","Eric","Stephen","Andrew",
                                     "Raymond","Gregory","Joshua","Jerry","Dennis","Walter","Patrick",
-                                    "Peter","Harold","Douglas","Henry","Carl","Arthur","Ryan","Roger"])
+                                    "Peter","Harold","Douglas","Henry","Carl","Arthur","Ryan","Roger","print"])
+
     matcher.runMatch()
 
